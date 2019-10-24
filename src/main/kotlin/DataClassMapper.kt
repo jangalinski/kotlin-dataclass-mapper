@@ -1,50 +1,52 @@
 package com.github.jangalinski.kotlin
 
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
-typealias Mapper<IN, OUT> = (IN) -> OUT
-typealias SetMapper<IN, OUT> = (Set<IN>) -> Set<OUT>
-typealias FieldMapping<T> = (T) -> Any?
+typealias Mapper<I, O> = (I) -> O
+typealias SetMapper<I, O> = Mapper<Set<I>, Set<O>>
 
-
+/**
+ * Mapper that can convert one data class into another data class.
+ *
+ * @param <I> inType (convert from)
+ * @param <O> outType (convert to)
+ */
 class DataClassMapper<I : Any, O : Any>(private val inType: KClass<I>, private val outType: KClass<O>) : Mapper<I, O> {
 
   companion object {
     inline operator fun <reified I : Any, reified O : Any> invoke() = DataClassMapper(I::class, O::class)
+
+    fun <I : Any, O : Any> setMapper(mapper: Mapper<I, O>) = object : SetMapper<I, O> {
+      override fun invoke(data: Set<I>): Set<O> = data.map(mapper).toSet()
+    }
   }
 
-  private val outConstructor: KFunction<O> = outType.primaryConstructor!!
-  private val inPropertiesByName = inType.memberProperties.associateBy { it.name }
+  val fieldMappers = mutableMapOf<String, Mapper<Any, Any>>()
 
-  private fun argFor(parameter: KParameter, data: I): Any? = inPropertiesByName[parameter.name]?.get(data)
+  private val outConstructor = outType.primaryConstructor!!
+  private val inPropertiesByName by lazy { inType.memberProperties.associateBy { it.name } }
+
+  private fun argFor(parameter: KParameter, data: I): Any? {
+    // get value from input data ...
+    val value = inPropertiesByName[parameter.name]?.get(data) ?: return null
+
+    // if a special mapper is registered, use it, otherwise keep value
+    return fieldMappers[parameter.name]?.invoke(value) ?: value
+  }
+
+  inline fun <reified S : Any, reified T : Any> register(parameterName: String, crossinline mapper: Mapper<S, T>): DataClassMapper<I, O> = apply {
+    this.fieldMappers[parameterName] = object : Mapper<Any, Any> {
+      override fun invoke(data: Any): Any = mapper.invoke(data as S)
+    }
+  }
 
   override fun invoke(data: I): O = with(outConstructor) {
-    callBy(parameters.associateWith { parameter -> argFor(parameter, data) })
+    callBy(parameters.associateWith { argFor(it, data) })
   }
 
-//
-//  fun <T : Any, R : Any> createMapper(inClass: KClass<T>, outClass: KClass<R>, mapping: Map<String, FieldMapping<T>>): Mapper<T, R> {
-//    val outConstructor = outClass.primaryConstructor!!
-//    val inPropertiesByName = inClass.memberProperties.associateBy { it.name }
-//
-//    fun argFor(parameter: KParameter, data: T): Any? = mapping[parameter.name]
-//      ?.invoke(data)
-//      ?: inPropertiesByName[parameter.name]?.get(data)
-//
-//    fun transform(data: T): R = with(outConstructor) {
-//      callBy(parameters.associateWith { parameter -> argFor(parameter, data) })
-//    }
-//
-//    return { transform(it) }
-//  }
-
-  override fun toString(): String {
-    return "DataClassMapper(inType=$inType, outType=$outType, outConstructor=$outConstructor, inPropertiesByName=$inPropertiesByName)"
-  }
-
+  override fun toString(): String = "DataClassMapper($inType -> $outType)"
 
 }
