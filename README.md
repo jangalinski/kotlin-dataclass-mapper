@@ -4,3 +4,6 @@
 [![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
 mapping data classes via reflection
+
+
+For usage, see: [DataClassMapperTest](https://github.com/jangalinski/kotlin-dataclass-mapper/blob/master/src/test/kotlin/DataClassMapperTest.kt)
