@@ -9,4 +9,4 @@ mapping data classes via reflection
 For usage, see: [DataClassMapperTest](https://github.com/jangalinski/kotlin-dataclass-mapper/blob/master/src/test/kotlin/DataClassMapperTest.kt)
 
 
-Some thought on this in my [medium-blog](https://medium.com/@jan.galinski/kotlin-data-class-mapping-aa0f9f750ca1).
+Some thoughts on this in my [medium-blog](https://medium.com/@jan.galinski/kotlin-data-class-mapping-aa0f9f750ca1).
