@@ -6,7 +6,6 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
 typealias Mapper<I, O> = (I) -> O
-typealias SetMapper<I, O> = Mapper<Set<I>, Set<O>>
 
 /**
  * Mapper that can convert one data class into another data class.
@@ -19,7 +18,7 @@ class DataClassMapper<I : Any, O : Any>(private val inType: KClass<I>, private v
   companion object {
     inline operator fun <reified I : Any, reified O : Any> invoke() = DataClassMapper(I::class, O::class)
 
-    fun <I : Any, O : Any> setMapper(mapper: Mapper<I, O>) = object : SetMapper<I, O> {
+    fun <I : Any, O : Any> setMapper(mapper: Mapper<I, O>) = object : Mapper<Set<I>, Set<O>> {
       override fun invoke(data: Set<I>): Set<O> = data.map(mapper).toSet()
     }
   }
