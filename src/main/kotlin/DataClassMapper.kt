@@ -77,8 +77,8 @@ class DataClassMapper<I : Any, O : Any>(
     }
   }
 
-  inline fun <S : Any, T : Any> targetParameterSupplier(
-    property: KProperty1<S, Any?>,
+  inline fun <T : Any> targetParameterSupplier(
+    property: KProperty1<*, Any?>,
     crossinline mapper: targetParameterSupplier<I, T>
   ): DataClassMapper<I, O> = apply {
     this.targetParameterProviders[property.name] = object : targetParameterSupplier<I, Any> {

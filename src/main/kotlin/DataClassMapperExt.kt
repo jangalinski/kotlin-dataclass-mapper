@@ -1,26 +1,28 @@
 package com.github.jangalinski.kotlin
 
+import kotlin.reflect.KProperty1
+
 inline fun <reified I : Any, reified O : Any> map(
   data: I,
-  parameterSuppliers: Map<String, targetParameterSupplier<I, Any>>? = null
+  parameterSuppliers: Map<KProperty1<*, *>, targetParameterSupplier<I, Any>>? = null
 ): O = applyParameterSuppliers<I, O>(parameterSuppliers).invoke(data)
 
 
 inline fun <reified I : Any, reified O : Any> Set<I>.mapSet(
-  parameterSuppliers: Map<String, targetParameterSupplier<I, Any>>? = null
+  parameterSuppliers: Map<KProperty1<*, *>, targetParameterSupplier<I, Any>>? = null
 ): Set<O> = DataClassMapper.setMapper<I, O> {
   applyParameterSuppliers<I, O>(parameterSuppliers).invoke(it)
 }.invoke(this)
 
 inline fun <reified I : Any, reified O : Any> List<I>.mapList(
-  parameterSuppliers: Map<String, targetParameterSupplier<I, Any>>? = null
+  parameterSuppliers: Map<KProperty1<*, *>, targetParameterSupplier<I, Any>>? = null
 ): List<O> = DataClassMapper.listMapper<I, O> {
   applyParameterSuppliers<I, O>(parameterSuppliers).invoke(it)
 }.invoke(this)
 
 @PublishedApi
 internal inline fun <reified I : Any, reified O : Any> applyParameterSuppliers(
-  parameterSuppliers: Map<String, targetParameterSupplier<I, Any>>?
+  parameterSuppliers: Map<KProperty1<*, *>, targetParameterSupplier<I, Any>>?
 ): DataClassMapper<I, O> {
   val mapper = DataClassMapper<I, O>()
   parameterSuppliers?.let { it ->

@@ -9,13 +9,11 @@ fun main() {
   }
 
   val listA = listB.mapList<B, A>(mapOf(
-    "c1" to object : targetParameterSupplier<B, String> {
-      override fun invoke(inType: B): String? = inType.c?.c1
-    },
-    "c2" to object : targetParameterSupplier<B, String> {
-      override fun invoke(inType: B): String? = inType.c?.c2
+    A::c1 to object : targetParameterSupplier<B, String> {
+      override fun invoke(p1: B): String? = p1.c?.c1
     }
   ))
+
 
   print(listA)
 }
