@@ -7,7 +7,7 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
 typealias Mapper<I, O> = (I) -> O
-typealias targetParameterSupplier<T, O> = (T) -> O?
+typealias TargetParameterSupplier<T, O> = (T) -> O?
 
 /**
  * Mapper that can convert one data class into another data class.
@@ -20,22 +20,8 @@ class DataClassMapper<I : Any, O : Any>(
   private val outType: KClass<O>
 ) : Mapper<I, O> {
 
-  companion object {
-    inline operator fun <reified I : Any, reified O : Any> invoke() =
-      DataClassMapper(I::class, O::class)
-
-    fun <I : Any, O : Any> setMapper(mapper: Mapper<I, O>) = object : Mapper<Set<I>, Set<O>> {
-      override fun invoke(data: Set<I>): Set<O> = data.map(mapper).toSet()
-    }
-
-    fun <I : Any, O : Any> listMapper(mapper: Mapper<I, O>) = object :
-      Mapper<List<I>, List<O>> {
-      override fun invoke(data: List<I>): List<O> = data.map(mapper)
-    }
-  }
-
   val fieldMappers = mutableMapOf<String, Mapper<Any, Any>>()
-  val targetParameterProviders = mutableMapOf<String, targetParameterSupplier<I, Any>>()
+  val targetParameterProviders = mutableMapOf<String, TargetParameterSupplier<I, Any>>()
 
   private val outConstructor = outType.primaryConstructor!!
   private val inPropertiesByName by lazy { inType.memberProperties.associateBy { it.name } }
@@ -49,16 +35,6 @@ class DataClassMapper<I : Any, O : Any>(
     return fieldMappers[parameter.name]?.invoke(value) ?: value
   }
 
-  inline fun <reified S : Any, reified T : Any> register(
-    parameterName: String,
-    crossinline mapper: Mapper<S, T>
-  ): DataClassMapper<I, O> =
-    apply {
-      this.fieldMappers[parameterName] = object : Mapper<Any, Any> {
-        override fun invoke(data: Any): Any = mapper.invoke(data as S)
-      }
-    }
-
   inline fun <reified C : Any, reified S : Any, reified T : Any> register(
     property: KProperty1<C, S>,
     crossinline mapper: Mapper<S, T>
@@ -69,19 +45,10 @@ class DataClassMapper<I : Any, O : Any>(
   }
 
   inline fun <T : Any> targetParameterSupplier(
-    parameterName: String,
-    crossinline mapper: targetParameterSupplier<I, T>
-  ): DataClassMapper<I, O> = apply {
-    this.targetParameterProviders[parameterName] = object : targetParameterSupplier<I, Any> {
-      override fun invoke(inType: I): Any? = mapper.invoke(inType)
-    }
-  }
-
-  inline fun <T : Any> targetParameterSupplier(
     property: KProperty1<*, Any?>,
-    crossinline mapper: targetParameterSupplier<I, T>
+    crossinline mapper: TargetParameterSupplier<I, T>
   ): DataClassMapper<I, O> = apply {
-    this.targetParameterProviders[property.name] = object : targetParameterSupplier<I, Any> {
+    this.targetParameterProviders[property.name] = object : TargetParameterSupplier<I, Any> {
       override fun invoke(inType: I): Any? = mapper.invoke(inType)
     }
   }
@@ -92,4 +59,16 @@ class DataClassMapper<I : Any, O : Any>(
 
   override fun toString(): String = "DataClassMapper($inType -> $outType)"
 
+  companion object {
+    inline operator fun <reified I : Any, reified O : Any> invoke() =
+      DataClassMapper(I::class, O::class)
+
+    fun <I : Any, O : Any> setMapper(mapper: Mapper<I, O>) = object : Mapper<Set<I>, Set<O>> {
+      override fun invoke(data: Set<I>): Set<O> = data.map(mapper).toSet()
+    }
+
+    fun <I : Any, O : Any> listMapper(mapper: Mapper<I, O>) = object : Mapper<List<I>, List<O>> {
+      override fun invoke(data: List<I>): List<O> = data.map(mapper)
+    }
+  }
 }
