@@ -7,7 +7,7 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
 typealias Mapper<I, O> = (I) -> O
-typealias targetParameterSupplier<O> = () -> O
+typealias targetParameterSupplier<I,O> = (I) -> O
 
 /**
  * Mapper that can convert one data class into another data class.
@@ -26,14 +26,14 @@ class DataClassMapper<I : Any, O : Any>(private val inType: KClass<I>, private v
   }
 
   val fieldMappers = mutableMapOf<String, Mapper<Any, Any>>()
-  private val targetParameterProviders = mutableMapOf<String, targetParameterSupplier<Any>>()
+  private val targetParameterProviders = mutableMapOf<String, targetParameterSupplier<Any,Any>>()
 
   private val outConstructor = outType.primaryConstructor!!
   private val inPropertiesByName by lazy { inType.memberProperties.associateBy { it.name } }
 
   private fun argFor(parameter: KParameter, data: I): Any? {
     // get value from input data or apply a default value to the target class
-    val value = inPropertiesByName[parameter.name]?.get(data) ?: return targetParameterProviders[parameter.name]?.invoke()
+    val value = inPropertiesByName[parameter.name]?.get(data) ?: return targetParameterProviders[parameter.name]?.invoke(data)
 
     // if a special mapper is registered, use it, otherwise keep value
     return fieldMappers[parameter.name]?.invoke(value) ?: value
@@ -51,15 +51,15 @@ class DataClassMapper<I : Any, O : Any>(private val inType: KClass<I>, private v
     }
   }
 
-  fun <T : Any> targetParameterSupplier(parameterName: String, mapper: targetParameterSupplier<T>): DataClassMapper<I, O> = apply {
-    this.targetParameterProviders[parameterName] = object : targetParameterSupplier<Any> {
-      override fun invoke(): Any = mapper.invoke()
+  fun <T : Any> targetParameterSupplier(parameterName: String, mapper: targetParameterSupplier<I,T>): DataClassMapper<I, O> = apply {
+    this.targetParameterProviders[parameterName] = object : targetParameterSupplier<Any,Any> {
+      override fun invoke(i: Any): Any = mapper.invoke(i as I)
     }
   }
 
-  fun <S : Any, T : Any> targetParameterSupplier(property: KProperty1<S, Any?>, mapper: targetParameterSupplier<T>): DataClassMapper<I, O> = apply {
-    this.targetParameterProviders[property.name] = object : targetParameterSupplier<Any> {
-      override fun invoke(): Any = mapper.invoke()
+  fun <S : Any, T : Any> targetParameterSupplier(property: KProperty1<S, Any?>, mapper: targetParameterSupplier<I,T>): DataClassMapper<I, O> = apply {
+    this.targetParameterProviders[property.name] = object : targetParameterSupplier<Any,Any> {
+      override fun invoke(i: Any): Any = mapper.invoke(i as I)
     }
   }
 
