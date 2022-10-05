@@ -18,7 +18,7 @@ internal class DataClassMapperTest {
 
   val fooMapper = DataClassMapper<FooIn, FooOut>()
   var fooWithTargetParamsMapper = DataClassMapper<FooIn, FooOut2>()
-    .targetParameterSupplier("active") { true }
+    .targetParameterSupplier("active") { it.name.isEmpty() }
     .targetParameterSupplier(FooOut2::age) { 65 }
 
   val bazMapper = DataClassMapper<BazIn, BazOut>()
