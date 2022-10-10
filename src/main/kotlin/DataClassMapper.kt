@@ -64,7 +64,10 @@ class DataClassMapper<I : Any, O : Any>(private val inType: KClass<I>, private v
   }
 
   override fun invoke(data: I): O = with(outConstructor) {
-    callBy(parameters.associateWith { argFor(it, data) })
+    if (data is Enum<*>)
+      outType.java.enumConstants[data.ordinal]
+    else
+      callBy(parameters.associateWith { argFor(it, data) })
   }
 
   override fun toString(): String = "DataClassMapper($inType -> $outType)"
